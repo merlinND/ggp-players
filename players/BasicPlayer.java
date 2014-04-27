@@ -16,6 +16,7 @@ public abstract class BasicPlayer extends StateMachineGamer {
 	/*
 	 * PROPERTIES
 	 */
+	public static final int MAX_GOAL = 100, MIN_GOAL = 0;
 
 	/*
 	 * METHODS

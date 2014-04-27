@@ -3,7 +3,6 @@ package players;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.ggp.base.player.gamer.Gamer;
 import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.Role;
@@ -81,7 +80,7 @@ public class CompulsiveDeliberationPlayer extends BasicPlayer {
 				MachineState nextState = machine.getNextState(current, played);
 				Integer score = getBestScore(machine, nextState, role);
 
-				if (score >= Gamer.MAX_GOAL)
+				if (score >= MAX_GOAL)
 					return score;
 				if (score > best)
 					best = score;

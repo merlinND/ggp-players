@@ -89,7 +89,7 @@ public class BoundedDepthPlayer extends BasicPlayer {
 
 		if (machine.isTerminal(current))
 			return machine.getGoal(current, role);
-		else if (depth >= maxDepth)
+		else if (depth >= MAX_DEPTH)
 			return Heuristics.goalProximity(machine, current, role);
 		else {
 			List<List<Move>> jointMoves = machine.getLegalJointMoves(current);

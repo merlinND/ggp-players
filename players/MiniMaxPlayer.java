@@ -2,7 +2,6 @@ package players;
 
 import java.util.List;
 
-import org.ggp.base.player.gamer.Gamer;
 import org.ggp.base.util.gdl.grammar.GdlPool;
 import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
@@ -41,12 +40,12 @@ public class MiniMaxPlayer extends BasicPlayer {
 
 		List<Move> moves = machine.getLegalMoves(current, role);
 		Move bestMove = new Move(GdlPool.getConstant("NOOP"));
-		Integer bestScore = Gamer.MIN_GOAL;
+		Integer bestScore = MIN_GOAL;
 
 		for (Move played : moves) {
 			Integer score = getMinScore(machine, current, role, played);
 
-			if (score >= Gamer.MAX_GOAL)
+			if (score >= MAX_GOAL)
 				return played;
 			if (bestMove == null || score > bestScore) {
 				bestScore = score;
@@ -66,7 +65,7 @@ public class MiniMaxPlayer extends BasicPlayer {
 		for (Move played : moves) {
 			Integer score = getMinScore(machine, current, role, played);
 
-			if (score >= Gamer.MAX_GOAL)
+			if (score >= MAX_GOAL)
 				return score;
 			if (max == null || score > max)
 				max = score;
@@ -88,7 +87,7 @@ public class MiniMaxPlayer extends BasicPlayer {
 				MachineState nextState = machine.getNextState(current, played);
 				Integer score = getMaxScore(machine, nextState, role);
 
-				if (score <= Gamer.MIN_GOAL)
+				if (score <= MIN_GOAL)
 					return score;
 				if (min == null || score < min)
 					min = score;
