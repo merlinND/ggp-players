@@ -55,8 +55,7 @@ public final class Heuristics {
 	}
 
 	/**
-	 * Advanced version: measure the similarity of this state to a winning state
-	 * TODO
+	 * TODO: Advanced version: measure the similarity of this state to a winning state
 	 * @param machine
 	 * @param state
 	 * @param role
