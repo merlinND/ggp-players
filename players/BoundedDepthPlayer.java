@@ -10,16 +10,19 @@ import org.ggp.base.util.statemachine.exceptions.GoalDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 
-public class BoundedDepthPlayer extends BasicPlayer {
+public abstract class BoundedDepthPlayer extends BasicPlayer {
 
 	/*
 	 * PROPERTIES
 	 */
-	protected static final int MAX_DEPTH = 4;
+	protected static final int MAX_DEPTH = 6;
 
 	/*
 	 * METHODS
 	 */
+	protected abstract int getHeuristic(StateMachine machine, MachineState current, Role role)
+			throws GoalDefinitionException, MoveDefinitionException;
+
 	@Override
 	public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
 		return getBestMove(getStateMachine(), getCurrentState(), getRole());
@@ -64,7 +67,7 @@ public class BoundedDepthPlayer extends BasicPlayer {
 		if (machine.isTerminal(current))
 			return machine.getGoal(current, role);
 		else if (depth >= MAX_DEPTH)
-			return Heuristics.goalProximity(machine, current, role);
+			return getHeuristic(machine, current, role);
 		else {
 			List<Move> moves = machine.getLegalMoves(current, role);
 
@@ -114,8 +117,4 @@ public class BoundedDepthPlayer extends BasicPlayer {
 	/*
 	 * GETTERS & SETTERS
 	 */
-	@Override
-	public String getName() {
-		return "MND_BoundedDepthPlayer";
-	}
 }
