@@ -2,6 +2,7 @@ package players;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,8 +26,8 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 			this.root = root;
 		}
 
-		public MonteCarloNode select() {
-			return root.select();
+		public MonteCarloNode select(long timeLimit) {
+			return root.select(timeLimit);
 		}
 
 		/**
@@ -54,6 +55,7 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 		/** The move that got us to this state */
 		protected Move parentMove;
 		protected List<MonteCarloNode> children = new ArrayList<MonteCarloNode>();
+		/** The game state represented by this node */
 		protected MachineState state;
 
 		protected int visits;
@@ -70,27 +72,37 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 			this.utility = 0;
 		}
 
-		public MonteCarloNode select() {
+		/**
+		 * Must return before timeLimit
+		 * @param timeLimit Timestamp in milliseconds
+		 * @return
+		 */
+		public MonteCarloNode select(long timeLimit) {
 			// If this node is new, select it
-			if (this.visits <= 0 || this.children.size() <= 0)
+			if (this.visits <= 0 || isTerminal())
 				return this;
 			else {
-				float bestScore = 0;
-				MonteCarloNode bestNode = null;
 				for (MonteCarloNode n : children) {
 					// If any of its children is new, select it
 					if (n.visits <= 0)
 						return n;
+				}
 
+				float bestScore = 0;
+				MonteCarloNode n, bestNode = null;
+				Iterator<MonteCarloNode> it = children.iterator();
+
+				do {
+					n = it.next();
 					// Otherwise, select the one that maximises the "score"
-					// and let it select among its children
+					// and allow it to select among its children
 					float score = evaluateNode(n);
 					if (bestNode == null || score > bestScore) {
 						bestScore = score;
 						bestNode = n;
 					}
-				}
-				return bestNode.select();
+				} while (it.hasNext() && canContinue(timeLimit));
+				return bestNode.select(timeLimit);
 			}
 		}
 
@@ -113,25 +125,35 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 		 * @return
 		 */
 		private float evaluateNode(MonteCarloNode node) {
-			return node.utility + (float)Math.sqrt(2 * Math.log(node.parent.visits) / (float)node.visits);
+			if (node.parent != null)
+				return node.utility + (float)Math.sqrt(2 * Math.log(node.parent.visits) / (float)node.visits);
+			// TODO this should never happen
+			else
+				throw new IllegalArgumentException("evaluateNode called on the root node");
 		}
 
 		// TODO: adapt to two player games (differentiate max nodes and min nodes)
 		// TODO: make sure not to exceed memory limits
-		public void expand() throws MoveDefinitionException, TransitionDefinitionException {
-			// Gather a list of the legal moves and the resulting states
-			Map<Move, List<MachineState>> nexts = getStateMachine().getNextStates(state, getRole());
-			// Do not build several nodes for the same state
-			Set<MachineState> seenStates = new HashSet<MachineState>();
+		public void expand()
+				throws MoveDefinitionException, TransitionDefinitionException {
+			if (children.size() <= 0) {
+				// Gather a list of the legal moves and the resulting states
+				Map<Move, List<MachineState>> nexts = getStateMachine().getNextStates(state, getRole());
+				// Do not build several nodes for the same state
+				Set<MachineState> seenStates = new HashSet<MachineState>();
 
-			for (Move m : nexts.keySet()) {
-				for (MachineState s : nexts.get(m)) {
-					if (!seenStates.contains(s)) {
-						children.add(new MonteCarloNode(s, this, m));
-						seenStates.add(s);
+				for (Move m : nexts.keySet()) {
+					for (MachineState s : nexts.get(m)) {
+						if (!seenStates.contains(s)) {
+							children.add(new MonteCarloNode(s, this, m));
+							seenStates.add(s);
+						}
 					}
 				}
 			}
+			// TODO: this should never happen
+			else
+				throw new IllegalArgumentException("expand called on a previously visited node");
 		}
 
 		public void backPropagate(float score) {
@@ -149,6 +171,9 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 				current = current.parent;
 			}
 			return depth;
+		}
+		public boolean isTerminal() {
+			return getStateMachine().isTerminal(state);
 		}
 	}
 
@@ -175,29 +200,31 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 	public Move getBestMove(StateMachine machine, MachineState current, Role role, long timeout)
 			throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {
 		// Keep enhancing the stats while there's still time
-		long timeLimit = Math.min(System.currentTimeMillis() + 500, timeout - 1000);
-		while (canContinue(timeLimit)) {
+		long timeLimit = Math.min(System.currentTimeMillis() + getMaxTimeToSpend(), (long)(timeout - 1000) );
+
+		do {
 
 			// 1. Select the next node to expand
-			MonteCarloNode nextNode = tree.select();
+			MonteCarloNode nextNode = tree.select(timeLimit);
 
 			// Bound depth
 			if (nextNode.getDepth() > getMaxDepth())
 				break;
-
-			// 2. Add its descendants to the considered nodes
-			// (i.e. they may get expanded next time)
-			nextNode.expand();
-
+			// Bound time
 			if (!canContinue(timeLimit))
 				break;
 
+			// 2. Add its descendants to the considered nodes
+			// (i.e. they may get expanded next time)
+			if (!nextNode.isTerminal())
+				nextNode.expand();
+
 			// 3. Run depth charge from the selected node
-			int score = nextNode.simulate(6);
+			int score = nextNode.simulate(getNumberOfDepthChargesToPerform());
 			// 4. Backpropagate this result from the selected node
 			// all the way up to the root node
 			nextNode.backPropagate(score);
-		}
+		} while (canContinue(timeLimit));
 
 		// The tree now contains all the stats we need to select the best target state
 		// TODO: adjust to multiplayer games!
@@ -225,7 +252,18 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 	 */
 	@Override
 	protected int getMaxDepth() {
-		return 3;
+		return 15;
+	}
+	/**
+	 * Useful if you don't want to wait too much during debug
+	 * @return The time in milliseconds
+	 */
+	protected long getMaxTimeToSpend() {
+		return 3000;
+	}
+
+	protected int getNumberOfDepthChargesToPerform() {
+		return 5;
 	}
 
 	@Override

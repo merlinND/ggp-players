@@ -93,14 +93,18 @@ public final class Heuristics {
 	 */
 	public static float monteCarloSearch(StateMachine machine, MachineState state, Role role, int n)
 			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
-		int total = 0;
-		MachineState finalState;
-		for (int i = 0; i < n; ++i) {
-			finalState = machine.performDepthCharge(state, null);
-			total += machine.getGoal(finalState, role);
-		}
+		if (machine.isTerminal(state))
+			return machine.getGoal(state, role);
+		else {
+			int total = 0;
+			MachineState finalState;
+			for (int i = 0; i < n; ++i) {
+				finalState = machine.performDepthCharge(state, null);
+				total += machine.getGoal(finalState, role);
+			}
 
-		return total / (float)n;
+			return total / (float)n;
+		}
 	}
 
 	/*
