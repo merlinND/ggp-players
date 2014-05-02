@@ -23,8 +23,14 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 			throws GoalDefinitionException, MoveDefinitionException;
 
 	@Override
-	public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
+	public Move stateMachineSelectMove(long timeout)
+			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
 		return getBestMove(getStateMachine(), getCurrentState(), getRole());
+	}
+
+	public Move getBestMove(StateMachine machine, MachineState current, Role role)
+			throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {
+		return getBestMove(machine, current, role, Long.MAX_VALUE);
 	}
 
 	/**
@@ -32,12 +38,13 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 	 * @param machine
 	 * @param state
 	 * @param role
+	 * @param timeout
 	 * @return
 	 * @throws TransitionDefinitionException
 	 * @throws MoveDefinitionException
 	 * @throws GoalDefinitionException
 	 */
-	public Move getBestMove(StateMachine machine, MachineState current, Role role)
+	public Move getBestMove(StateMachine machine, MachineState current, Role role, long timeout)
 			throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {
 		List<Move> moves = machine.getLegalMoves(current, role);
 
@@ -61,7 +68,6 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 		}
 		return bestMove;
 	}
-
 
 	public Integer getAlphaScore(StateMachine machine, MachineState current, Role role,
 								 Integer alpha, Integer beta, Integer depth)
