@@ -192,6 +192,11 @@ public class MonteCarloTreeSearchPlayer extends BoundedDepthPlayer {
 		// TODO: could we keep the nodes from one turn to the next?
 		tree = new MonteCarloTree(new MonteCarloNode(getCurrentState()));
 
+		// If there's only one possible move, don't bother searching
+		List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
+		if (moves.size() == 1)
+			return moves.get(0);
+
 		// For this player, we need the timeout parameter
 		return getBestMove(getStateMachine(), getCurrentState(), getRole(), timeout);
 	}
