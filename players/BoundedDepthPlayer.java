@@ -15,7 +15,6 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 	/*
 	 * PROPERTIES
 	 */
-	protected static final int MAX_DEPTH = 6;
 
 	/*
 	 * METHODS
@@ -45,6 +44,10 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 		Move bestMove = null;
 		Integer alpha = MIN_GOAL, beta = MAX_GOAL;
 
+		if (moves.size() == 1) {
+			return moves.get(0);
+		}
+
 		for (Move played : moves) {
 			Integer score = getBetaScore(machine, current, role, played, alpha, beta, 1);
 
@@ -66,7 +69,7 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 
 		if (machine.isTerminal(current))
 			return machine.getGoal(current, role);
-		else if (depth >= MAX_DEPTH)
+		else if (depth >= getMaxDepth())
 			return getHeuristic(machine, current, role);
 		else {
 			List<Move> moves = machine.getLegalMoves(current, role);
@@ -113,8 +116,10 @@ public abstract class BoundedDepthPlayer extends BasicPlayer {
 		}
 	}
 
-
 	/*
 	 * GETTERS & SETTERS
 	 */
+	protected int getMaxDepth() {
+		return 6;
+	}
 }
